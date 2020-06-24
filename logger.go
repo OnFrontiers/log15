@@ -1,6 +1,7 @@
 package log15
 
 import (
+	"context"
 	"fmt"
 	"strings"
 	"time"
@@ -75,6 +76,16 @@ type Record struct {
 	Ctx      []interface{}
 	Call     stack.Call
 	KeyNames RecordKeyNames
+
+	gctx context.Context
+}
+
+// Mimics http.Request
+func (r *Record) Context() context.Context {
+	if r.gctx != nil {
+		return r.gctx
+	}
+	return context.Background()
 }
 
 // RecordKeyNames are the predefined names of the log props used by the Logger interface.
@@ -101,6 +112,12 @@ type Logger interface {
 	Warn(msg string, ctx ...interface{})
 	Error(msg string, ctx ...interface{})
 	Crit(msg string, ctx ...interface{})
+
+	DebugContext(gctx context.Context, msg string, ctx ...interface{})
+	InfoContext(gctx context.Context, msg string, ctx ...interface{})
+	WarnContext(gctx context.Context, msg string, ctx ...interface{})
+	ErrorContext(gctx context.Context, msg string, ctx ...interface{})
+	CritContext(gctx context.Context, msg string, ctx ...interface{})
 }
 
 type logger struct {
@@ -108,7 +125,7 @@ type logger struct {
 	h   *swapHandler
 }
 
-func (l *logger) write(msg string, lvl Lvl, ctx []interface{}) {
+func (l *logger) write(gctx context.Context, msg string, lvl Lvl, ctx []interface{}) {
 	l.h.Log(&Record{
 		Time: time.Now(),
 		Lvl:  lvl,
@@ -120,6 +137,7 @@ func (l *logger) write(msg string, lvl Lvl, ctx []interface{}) {
 			Msg:  msgKey,
 			Lvl:  lvlKey,
 		},
+		gctx: gctx,
 	})
 }
 
@@ -137,24 +155,44 @@ func newContext(prefix []interface{}, suffix []interface{}) []interface{} {
 	return newCtx
 }
 
+func (l *logger) DebugContext(gctx context.Context, msg string, ctx ...interface{}) {
+	l.write(gctx, msg, LvlDebug, ctx)
+}
+
+func (l *logger) InfoContext(gctx context.Context, msg string, ctx ...interface{}) {
+	l.write(gctx, msg, LvlInfo, ctx)
+}
+
+func (l *logger) WarnContext(gctx context.Context, msg string, ctx ...interface{}) {
+	l.write(gctx, msg, LvlWarn, ctx)
+}
+
+func (l *logger) ErrorContext(gctx context.Context, msg string, ctx ...interface{}) {
+	l.write(gctx, msg, LvlError, ctx)
+}
+
+func (l *logger) CritContext(gctx context.Context, msg string, ctx ...interface{}) {
+	l.write(gctx, msg, LvlCrit, ctx)
+}
+
 func (l *logger) Debug(msg string, ctx ...interface{}) {
-	l.write(msg, LvlDebug, ctx)
+	l.DebugContext(nil, msg, ctx...)
 }
 
 func (l *logger) Info(msg string, ctx ...interface{}) {
-	l.write(msg, LvlInfo, ctx)
+	l.InfoContext(nil, msg, ctx...)
 }
 
 func (l *logger) Warn(msg string, ctx ...interface{}) {
-	l.write(msg, LvlWarn, ctx)
+	l.WarnContext(nil, msg, ctx...)
 }
 
 func (l *logger) Error(msg string, ctx ...interface{}) {
-	l.write(msg, LvlError, ctx)
+	l.ErrorContext(nil, msg, ctx...)
 }
 
 func (l *logger) Crit(msg string, ctx ...interface{}) {
-	l.write(msg, LvlCrit, ctx)
+	l.CritContext(nil, msg, ctx...)
 }
 
 func (l *logger) GetHandler() Handler {

@@ -1,6 +1,7 @@
 package log15
 
 import (
+	"context"
 	"os"
 
 	"github.com/mattn/go-colorable"
@@ -42,27 +43,52 @@ func Root() Logger {
 // etc.) to keep the call depth the same for all paths to logger.write so
 // runtime.Caller(2) always refers to the call site in client code.
 
+// DebugContext is a convenient alias for Root().DebugContext
+func DebugContext(gctx context.Context, msg string, ctx ...interface{}) {
+	root.write(gctx, msg, LvlDebug, ctx)
+}
+
+// InfoContext is a convenient alias for Root().InfoContext
+func InfoContext(gctx context.Context, msg string, ctx ...interface{}) {
+	root.write(gctx, msg, LvlInfo, ctx)
+}
+
+// WarnContext is a convenient alias for Root().WarnContext
+func WarnContext(gctx context.Context, msg string, ctx ...interface{}) {
+	root.write(gctx, msg, LvlWarn, ctx)
+}
+
+// ErrorContext is a convenient alias for Root().ErrorContext
+func ErrorContext(gctx context.Context, msg string, ctx ...interface{}) {
+	root.write(gctx, msg, LvlError, ctx)
+}
+
+// CritContext is a convenient alias for Root().CritContext
+func CritContext(gctx context.Context, msg string, ctx ...interface{}) {
+	root.write(gctx, msg, LvlCrit, ctx)
+}
+
 // Debug is a convenient alias for Root().Debug
 func Debug(msg string, ctx ...interface{}) {
-	root.write(msg, LvlDebug, ctx)
+	DebugContext(nil, msg, ctx...)
 }
 
 // Info is a convenient alias for Root().Info
 func Info(msg string, ctx ...interface{}) {
-	root.write(msg, LvlInfo, ctx)
+	InfoContext(nil, msg, ctx...)
 }
 
 // Warn is a convenient alias for Root().Warn
 func Warn(msg string, ctx ...interface{}) {
-	root.write(msg, LvlWarn, ctx)
+	WarnContext(nil, msg, ctx...)
 }
 
 // Error is a convenient alias for Root().Error
 func Error(msg string, ctx ...interface{}) {
-	root.write(msg, LvlError, ctx)
+	ErrorContext(nil, msg, ctx...)
 }
 
 // Crit is a convenient alias for Root().Crit
 func Crit(msg string, ctx ...interface{}) {
-	root.write(msg, LvlCrit, ctx)
+	CritContext(nil, msg, ctx...)
 }
